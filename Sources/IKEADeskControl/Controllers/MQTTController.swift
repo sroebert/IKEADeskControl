@@ -42,6 +42,8 @@ actor MQTTController {
     private var isConnected = false
     private var deskState: DeskState?
     
+    private let debouncer = Limiter(policy: .debounce, interval: .milliseconds(200))
+    
     // MARK: - Lifecycle
     
     init(
@@ -129,10 +131,14 @@ actor MQTTController {
             return
         }
         
-        client.publish(
-            .string(deskStateJSON, contentType: "application/json"),
-            to: topic(.status)
-        )
+        Task {
+            await debouncer.perform {
+                await self.client.publish(
+                    .string(deskStateJSON, contentType: "application/json"),
+                    to: self.topic(.status)
+                )
+            }
+        }
     }
     
     // MARK: - Register Events
