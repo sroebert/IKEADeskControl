@@ -37,6 +37,8 @@ actor MQTTController {
     private let logger = Logger(label: "com.roebert.IKEADeskControl.MQTTController")
     
     private let client: MQTTClient
+    
+    private let globalTopicPrefix: String
     private let topicPrefix: String
     
     private var isConnected = false
@@ -55,7 +57,8 @@ actor MQTTController {
         self.url = url
         self.credentials = credentials
         
-        topicPrefix = "ikea-desk-control/desk-\(peripheralUUID.uuidString.lowercased())"
+        globalTopicPrefix = "ikea-desk-control"
+        topicPrefix = "\(globalTopicPrefix)/desk-\(peripheralUUID.uuidString.lowercased())"
         
         client = .init(configuration: .init(
             url: url,
@@ -93,6 +96,10 @@ actor MQTTController {
     }
     
     // MARK: - Utils
+    
+    private func globalTopic(_ topic: Topic) -> String {
+        return "\(globalTopicPrefix)/\(topic.rawValue)"
+    }
     
     private func topic(_ topic: Topic) -> String {
         return "\(topicPrefix)/\(topic.rawValue)"
@@ -151,13 +158,20 @@ actor MQTTController {
     
     private func onMQTTConnect() async {
         do {
-            let response = try await client.subscribe(to: topic(.command)).get()
-            guard case .success = response.result else {
-                Task {
-                    try await client.reconnect()
+            let response = try await client.subscribe(to: [
+                globalTopic(.command),
+                topic(.command)
+            ])
+            
+            for result in response.results {
+                guard case .success = result else {
+                    Task {
+                        try await client.reconnect()
+                    }
+                    return
                 }
-                return
             }
+            
             publish()
         } catch {
             Task {
