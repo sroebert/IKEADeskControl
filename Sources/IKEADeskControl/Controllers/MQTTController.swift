@@ -133,7 +133,7 @@ actor MQTTController {
         
         Task {
             await debouncer.perform {
-                await self.client.publish(
+                try? await self.client.publish(
                     .string(deskStateJSON, contentType: "application/json"),
                     to: self.topic(.status)
                 )
@@ -153,12 +153,16 @@ actor MQTTController {
         do {
             let response = try await client.subscribe(to: topic(.command)).get()
             guard case .success = response.result else {
-                client.reconnect()
+                Task {
+                    try await client.reconnect()
+                }
                 return
             }
             publish()
         } catch {
-            client.reconnect()
+            Task {
+                try await client.reconnect()
+            }
         }
     }
     
