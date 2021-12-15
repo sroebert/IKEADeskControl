@@ -56,7 +56,7 @@ actor Limiter {
             await task()
         }
         
-        await Task.sleep(interval)
+        try? await Task.sleep(for: interval)
     }
     
     private func debounce(_ task: @escaping @Sendable () async -> Void) async {
@@ -72,7 +72,7 @@ actor Limiter {
             isDebouncing = false
         }
         
-        await Task.sleep(interval)
+        try? await Task.sleep(for: interval)
         
         if let finalTask = debounceTask {
             Task {

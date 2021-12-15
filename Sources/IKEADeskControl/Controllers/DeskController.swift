@@ -135,7 +135,7 @@ actor DeskController {
         connection = nil
         await onDisconnected?()
         
-        await Task.sleep(Self.retryInterval)
+        try? await Task.sleep(for: Self.retryInterval)
         await setup()
     }
     
@@ -189,7 +189,7 @@ actor DeskController {
                 "error": "\(error)"
             ])
             
-            await Task.sleep(Self.retryInterval)
+            try? await Task.sleep(for: Self.retryInterval)
             await setup()
         }
     }
@@ -337,13 +337,13 @@ actor DeskController {
         try await controller.writeValue(Command.undefined, for: commandCharacteristic)
         
         // We cannot directly start moving, the desk needs some time to process for some reason.
-        await Task.sleep(.milliseconds(800))
+        try await Task.sleep(for: .milliseconds(800))
         
         repeat {
-            async let sleep: () = Task.sleep(.milliseconds(500))
+            async let sleep: () = Task.sleep(for: .milliseconds(500))
             
             try await controller.writeValue(moveToCommand, for: moveToCharacteristic)
-            await sleep
+            try await sleep
             
             try Task.checkCancellation()
             isMoving = true
