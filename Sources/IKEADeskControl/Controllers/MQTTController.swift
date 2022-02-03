@@ -62,7 +62,8 @@ actor MQTTController {
         
         client = .init(configuration: .init(
             url: url,
-            credentials: credentials
+            credentials: credentials,
+            reconnectMode: .retry(minimumDelay: .seconds(1), maximumDelay: .seconds(3))
         ))
         
         client.configuration.willMessage = .init(
